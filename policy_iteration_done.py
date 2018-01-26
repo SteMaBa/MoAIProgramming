@@ -2,34 +2,34 @@
 # MDP CLASS #
 #############
 class MDP:
-        """
-        Create Marcov Decision Processes
-        Input:
-            State = array with Gridworlds (Strings)
-            Actions = predefined possible actions (up, down, left, right)
-            probability = probability of intended state change
-            reward = standard short-term reward
-        """
+    """
+    Create Marcov Decision Processes
+    Input:
+        State = array with Gridworlds (Strings)
+        Actions = predefined possible actions (up, down, left, right)
+        probability = probability of intended state change
+        reward = standard short-term reward
+    """
  
-        def __init__(self, State, probability, reward,  Actions = None):
-            """
-            call to get Gridworld
-            """ 
-            self.S = State
-            self.A = Actions,
-            self.p = probability
-            self.r = reward
+    def __init__(self, State, probability, reward,  Actions = None):
+        """
+        call to get Gridworld
+        """ 
+        self.S = State
+        self.A = Actions,
+        self.p = probability
+        self.r = reward
  
-        def get_state(self):
-            return self.S
+    def get_state(self):
+        return self.S
         
-        def get_prob(self):
-            return self.p
+    def get_prob(self):
+        return self.p
         
-        def get_reward(self):
-            return self.r
+    def get_reward(self):
+        return self.r
        
-     import numpy as np
+    import numpy as np
 
 ##################
 # # EVALUATION # #
