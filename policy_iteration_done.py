@@ -1,7 +1,10 @@
+import numpy as np
+
+
 #############
 # MDP CLASS #
 #############
-class MDP:
+class Holder:
     """
     Create Marcov Decision Processes
     Input:
@@ -11,29 +14,22 @@ class MDP:
         reward = standard short-term reward
     """
  
-    def __init__(self, State, probability, reward,  Actions = None):
+    def __init__(self, State, probability, reward, zip_policy, discount_factor):
         """
         call to get Gridworld
         """ 
-        self.S = State
-        self.A = Actions,
-        self.p = probability
-        self.r = reward
- 
-    def get_state(self):
-        return self.S
+        self.field = State
+        self.zip_policy = zip_policy
+        self.prob = probability
+        self.reward = reward
+        self.discount_factor = discount_factor
+     
+     
         
-    def get_prob(self):
-        return self.p
-        
-    def get_reward(self):
-        return self.r
-       
-    import numpy as np
-
 ##################
 # # EVALUATION # #
 ##################
+
 def old_value(field,new_state,old,state):
     """
     return value of new state
@@ -56,7 +52,7 @@ def old_value(field,new_state,old,state):
    
     return old[i,j]
 
-def v(state, old, mdp, discount_factor, zip_policy):
+def v(state, old, holder):
     """
     calculate value of state following policy
     
@@ -65,10 +61,10 @@ def v(state, old, mdp, discount_factor, zip_policy):
     discount_factor as float
     policy as 2d array
     """
-    field = mdp.get_state()
+    field = holder.field
     
     # retrieve action (movement in x and y direction) from policy
-    x_policy, y_policy = zip_policy
+    x_policy, y_policy = holder.zip_policy
     x,y = x_policy[state],y_policy[state]
     
     # calculate new state
@@ -80,16 +76,16 @@ def v(state, old, mdp, discount_factor, zip_policy):
     state_3 = (state[0] - y, state[1] - x)
     
     # probability of moving in an unintended direction
-    prob = mdp.get_prob()
-    un_prob = (1 - mdp.get_prob())/2
+    prob = holder.prob
+    un_prob = (1 - holder.prob/2)
     
     # formula from slides with old value function
     
-    return (mdp.get_reward() + discount_factor * (prob * old_value(field,state_1,old,state)
+    return (holder.reward + holder.discount_factor * (prob * old_value(field,state_1,old,state)
                                                 + un_prob * old_value(field,state_2,old,state) 
                                                 + un_prob * old_value(field,state_3,old,state)))
 
-def evaluation(mdp,zip_policy,discount_factor):
+def evaluation(holder,iterations = 50):
     """
     policy evaluation
     
@@ -104,20 +100,16 @@ def evaluation(mdp,zip_policy,discount_factor):
     """
     
     # get original grid world
-    field = mdp.get_state()
+    field = holder.field
     M,N = field.shape
     
     # create a 2d array which is going to hold the previous value matrix for comparison
     old = np.zeros((M,N))
     v_matrix = np.zeros((M,N))
     
-    max_diff = 999999
-    threshold = 0.01
-    
-    obstacles = []
-    
-    # evaluate policy until change is neglectable
-    while(abs(max_diff) > threshold):
+    # evaluate policy n times
+    for _ in range(iterations):
+        
         # new value matrix is all zeros
         v_matrix = np.zeros((M,N))
         
@@ -130,8 +122,8 @@ def evaluation(mdp,zip_policy,discount_factor):
                 # we also ignore 'O' fields when doing the greedy policy update
                 # => no need to worry about this artificial negative 99
                 if field[i,j] == 'O':
-                    v_matrix[i,j] = -99
-                    old[i,j] = -99
+                    v_matrix[i,j] = None
+                    old[i,j] = None
                     
                 # if state is exit, value = 1
                 if field[i,j] == 'E':
@@ -145,14 +137,8 @@ def evaluation(mdp,zip_policy,discount_factor):
                     
                 # if state is normal field, calculate new value
                 if field[i,j] == 'F':
-                    v_matrix[i,j] = v((i,j),old,mdp,discount_factor,zip_policy)
-                        
-        # difference matrix    
-        diff = old - v_matrix
-        
-        # highest difference of old and new value function for comparison with threshold
-        max_diff = np.amax(np.absolute(diff))
-        
+                    v_matrix[i,j] = v((i,j),old,holder)
+                            
         # calculated value matrix is now old matrix
         old = np.copy(v_matrix)
     
@@ -161,7 +147,7 @@ def evaluation(mdp,zip_policy,discount_factor):
 ########################
 # # POLICY ITERATION # #
 ########################
-def _iterate(v, mdp, policy, discount_factor):
+def _iterate(v, holder):
     """
     Iterate over every State once
     
@@ -173,9 +159,9 @@ def _iterate(v, mdp, policy, discount_factor):
     Return:
         v , policy
     """
-    v = evaluation(mdp, policy, discount_factor)
-    x_policy, y_policy = policy
-    M, N = mdp.get_state().shape
+    value_function = evaluation(holder)
+    x_policy, y_policy = holder.zip_policy
+    M, N = holder.field.shape
     
     # obstacle padding
     biggerState =[]
@@ -188,11 +174,11 @@ def _iterate(v, mdp, policy, discount_factor):
      
     biggerState = np.asarray(biggerState)
     
-    biggerState[1:M+1,1:N+1] = mdp.get_state()
+    biggerState[1:M+1,1:N+1] = holder.field
     
     bigger = np.ones((M+2,N+2)) * -9999999999
-    bigger[1:M+1,1:N+1] = v
-    v = bigger
+    bigger[1:M+1,1:N+1] = value_function
+    value_function = bigger
     
     for i,j in np.argwhere(biggerState != 'O'):
             
@@ -200,10 +186,10 @@ def _iterate(v, mdp, policy, discount_factor):
             # lets improve this part pls
             
             elem_list = []
-            elem_list.append(v[i-1,j])
-            elem_list.append(v[i+1,j])
-            elem_list.append(v[i,j+1])
-            elem_list.append(v[i,j-1])
+            elem_list.append(value_function[i-1,j])
+            elem_list.append(value_function[i+1,j])
+            elem_list.append(value_function[i,j+1])
+            elem_list.append(value_function[i,j-1])
             
             cords_list = []
             cords_list.append((i-1,j))
@@ -220,9 +206,9 @@ def _iterate(v, mdp, policy, discount_factor):
     
     policy = (x_policy,y_policy)
     
-    return v[1:M+1,1:N+1],policy
+    return value_function[1:M+1,1:N+1],policy
 
-def _policyIteration(MDP, discount_factor, zip_policy, iterations = None):
+def _policyIteration(holder, iterations = None):
     """
     Find optimal policy by iterating over the policy until stopping-condition 
     is met either until converges or amount of steps reached
@@ -237,19 +223,19 @@ def _policyIteration(MDP, discount_factor, zip_policy, iterations = None):
     """
     
     #Initialize value function
-    M, N = MDP.get_state().shape
+    M, N = holder.field.shape
     v_function = np.zeros((M,N))
     
     if callable(iterations):
         #iterate over policy n-times
         for i in range(iterations):
-            v_function, zip_policy = _iterate(v_function, MDP, zip_policy, discount_factor)
+            v_function, zip_policy = _iterate(v_function, holder)
     
     else:
         #iterate over policy until converges
         
-        while((v_function.any() != evaluation(MDP, zip_policy, discount_factor).any())):
-            v_function, zip_policy = _iterate(v_function, MDP, zip_policy, discount_factor)
+        while((v_function.any() != evaluation(holder).any())):
+            v_function, zip_policy = _iterate(v_function, holder)
                 
     return zip_policy
  
@@ -273,17 +259,20 @@ with open(gridpath) as gridfile:
 field = np.asarray(grid)
 M,N = field.shape
 
-y_policy = np.ones((M,N))
-x_policy = np.zeros((M,N))
+x_policy = np.ones((M,N))
+y_policy = np.zeros((M,N))
+zip_policy = (x_policy,y_policy)
 
-mdp = MDP(field,0.8,-0.04,)
+discount_factor = 0.7
+
+holder = Holder(field,0.8,-0.04,zip_policy,discount_factor)
 
 # hoch =  -1 0 
 # rechts = 0 1
 # links = 0 -1
 # down = 1 0
 
-perfect_policy = _policyIteration(mdp, 0.7, zip_policy)
+perfect_policy = _policyIteration(holder)
 
 # steffis kosmetische update funktion für die policy
 
