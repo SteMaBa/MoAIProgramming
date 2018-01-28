@@ -6,6 +6,7 @@ import argparse
 import numpy as np
 
 
+
 ###############################
 ###Define Classes and Functions
 ###############################
@@ -56,34 +57,45 @@ def printgrid(grid):
         print()
     print() #Formatting, empty line after print-out
 
-def beautyMode(policy, field):
+def beautyMode(policy, policy_eval):
     """
-    Exchange ugly vector representation with beautiful arrows
+    Print policy representation with beautiful arrows and policy evaluation.
     
     Input:
         Policy as zipped array or 3D array
-        Field : Gridworld  to get shape
+        Policy evaluation
     """
     
-    M,N = field.shape
-    beauty = np.asarray(field)
+    M,N = policy_eval.shape
+    beauty = np.eye(M,N,dtype=str) #Create MxN str-Array
+    beauty[:] = "  "
     
-    #go over policy and insert arrows in the beauty array for the different vectors
+    print("Generated Policy Evaluation:")
     for x in range(M):
         for y in range(N):
-            if perfect_policy[0][x,y] == -1:
+            if np.isnan(policy_eval[x][y]):
+                print ("     ", end =' ')
+            else:
+                #print("%.2f" % policy_eval[x][y], end =' ')
+                print(["","+"][policy_eval[x][y]>=0] + "%.2f" % policy_eval[x][y], end = ' ')
+        print()
+    print()
+    
+    #go over policy and insert arrows in the beauty array for the different vectors
+    print("Arrow-Representation of generated Policy:")
+    for x in range(M):
+        for y in range(N):
+            if policy[0][x,y] == -1:
                 beauty[x,y] = '↑'
-            if perfect_policy[0][x,y] == 1:
+            if policy[0][x,y] == 1:
                 beauty[x,y] = '↓'
-            if perfect_policy[1][x,y] == 1:
+            if policy[1][x,y] == 1:
                 beauty[x,y] = '→'
-            if perfect_policy[1][x,y] == -1:
+            if policy[1][x,y] == -1:
                 beauty[x,y] = '←'
             print(beauty[x,y], end =' ') #Print immediately
         print()
     print()
-
-
 
 
 
@@ -92,7 +104,7 @@ def beautyMode(policy, field):
 ##################
 class MDP_PLUS:
         """
-        Create Marcov Decision Processes
+        Create Marcov Decision Processes, containing additional parameters
         Input:
             State = array with Gridworlds (Strings)
             probability = probability of intended state change
@@ -101,7 +113,7 @@ class MDP_PLUS:
             iterations = number of evaluation steps
         """
  
-        def __init__(self, State, probability, reward, discount_factor, iterations = 1):
+        def __init__(self, State, probability, reward, discount_factor, iterations, manualiteration, auto_intermediate):
             """
             call to get Gridworld
             """
@@ -110,7 +122,13 @@ class MDP_PLUS:
             self.r = reward
             self.its = iterations
             self.gamma = discount_factor
- 
+            self.manual = manualiteration
+            self.auto_inter = auto_intermediate
+        
+        def printparameters(self):
+            print("Parameters:")
+            print("Probability performing desired action:", self.p, " Short-term reward:", self.r, " Gamma-value:", self.gamma, " Evaluation-Steps:", self.its, " \nDo manual iteration:", self.manual, " Show intermediate steps during automatic processing:", self.auto_inter, "\n\n")
+
         def get_state(self):
             return self.S
         
@@ -125,6 +143,16 @@ class MDP_PLUS:
         
         def get_gamma(self):
             return self.gamma
+
+        def get_manual(self):
+            return self.manual
+        
+        def get_autointermediate(self):
+            return self.auto_inter
+
+        def set_iterations(self, iterations):
+            self.its = iterations
+            return
 
 
 
@@ -358,6 +386,11 @@ def _policyIteration(mdp, zip_policy):
         Optimal policy as 2D-array
     """
     
+    #Account for manual iteration
+    read_n = None
+    printer_zip = None
+    printer_eval = None
+    terminate = False
     
     #Initialize value function and set starting policy
     M, N = mdp.get_state().shape
@@ -365,12 +398,48 @@ def _policyIteration(mdp, zip_policy):
     
     #iterate over policy until value function converges
     diff = np.ones((M,N))
-    while(np.max(np.absolute(diff) > 0)):
+    no_nan = diff
+    
+    while(np.max(np.absolute(no_nan) > 0)):
         
+        #Ask for manual iteration input
+        if (mdp.manual):
+            while(True):
+                read_n = input("Please specify number of iterations in evaluation phase. (Type 'X' to terminate.): ")
+                try:
+                    if read_n == 'x' or read_n == 'X':
+                        terminate = True
+                    read_n = int(read_n)
+                    if read_n < 1:
+                        raise Exception
+                except:
+                    if (terminate):
+                        print("Exiting.")
+                        exit()
+                    else:
+                        print("Please specify positive integer!")
+                mdp.set_iterations(read_n)
+                print()
+                break
+    
+    
         v_function, zip_policy = _iterate(v_function, mdp, zip_policy)
-        diff = v_function - evaluation(mdp, zip_policy)
+        eval = evaluation(mdp, zip_policy)
+        diff = v_function - eval
         
-    return zip_policy
+        #Show intermediate steps
+        if (mdp.get_manual() or mdp.get_autointermediate()):
+            printer_zip = np.copy(zip_policy)
+            printer_eval = np.copy(eval)
+            beautyMode(zip_policy, eval)
+            print()
+        
+        
+        #Suppress warning of >-Function checking on NaN
+        no_nan = diff[~np.isnan(diff)]
+    
+    
+    return zip_policy, v_function
 
 
 
@@ -389,41 +458,30 @@ print()
 
 ###Evaluate input parameters
 
-#Create Argparser with options p, e, g
+#Create Argparser
 #Gridpath is necessary
-#If evalsteps or gammavalue provided, other is needed
+#If manual is not specified, evalsteps is needed
+#Other switches are optional
 parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--gridpath", help="Specify path of gridfile. Needed.")
-parser.add_argument("-e", "--evalsteps", help="Define number of evaluation steps n. Needed for automatic iteration.")
-parser.add_argument("-g", "--gammavalue", help="Define Gamma for weighting of rewards. Needed for automatic iteration.")
+parser.add_argument("-m", "--manual", default=False, action="store_true",  help="Enable step-by-step evaluation with option for intermediate input.")
+parser.add_argument("-p", "--gridpath", help="Specify path of gridfile. Needed.", type=str)
+parser.add_argument("-e", "--evalsteps", help="Define number of evaluation steps n. Needed for automatic iteration.", type=int)
+parser.add_argument("-g", "--gammavalue", help="Define Gamma for weighting of rewards. Default value 1.", type=float, default=1)
+parser.add_argument("-r", "--reward", help="Define expected reward for actions in non-terminal states. Default value -0.04.", type=float, default=-0.04)
+parser.add_argument("-d", "--desiredprob", help="Define probability of performing desired action. Default value 0.8.", type=float, default=0.8)
+parser.add_argument("-a", "--animate", default=False, action="store_true",  help="Show intermediate steps during automatic processing.")
 args = parser.parse_args()
-
 
 #Gridpath must be provided, check for correctness later
 if ((args.gridpath is None)): #Args are None, if not specified
     parser.error('Please specify a gridpath.')
 
-#If -e then also -g necessary, if -g then also -e necessary
-if ((args.evalsteps is not None and args.gammavalue is None) or
-    (args.evalsteps is None and args.gammavalue is not None)):
-    parser.error('Please specify both, evalsteps and gammavalue.')
-
-#Evalsteps must be int, gamma must be float; set gridpath (string)
-evalsteps = None
-gamma = None
-if ((args.evalsteps is not None)):
-    try:
-        evalsteps = int(args.evalsteps)
-        gamma = float(args.gammavalue)
-    except:
-        parser.error('Please specify valid evalsteps and gammavalue.')
-gridpath = args.gridpath
-
-
+#If manual is not specified, evalsteps is needed
+if ((args.manual is False and args.evalsteps is None)):
+    parser.error('Please specify evalsteps.')
 
 ###Read in grid
-#Try to open from gridpath, if not provided, terminate
-grid = getgridfromgridpath(gridpath) #Exits program, if gridpath not appropriate
+grid = getgridfromgridpath(args.gridpath) #Exits program, if gridpath not appropriate
 print("Raw read-in grid: ")
 printgrid(grid) #Print grid
 
@@ -455,22 +513,23 @@ for [x,y] in pit:
     y_policy[x,y] = None
 zip_policy = (x_policy,y_policy)
 
-#Initialize MDP plus discount factor
-#             (State, probability, reward, discount_factor, iterations = 1)
-if evalsteps == None: #Provided only gridpath, automatic iteration
-    mdp = MDP_PLUS(field,0.8,-0.04,1)
-else:                 #Provided more parameters
-    mdp = MDP_PLUS(field,float(gamma),-0.04,int(evalsteps))
 
-# up =  -1 0
-# right = 0 1
-# left = 0 -1
-# down = 1 0
+#Initialize MDP with additional parameters
+mdp = MDP_PLUS(field,args.desiredprob,args.reward,args.gammavalue,args.evalsteps,args.manual,args.animate)
+
+
+#Provide information about parameters in use
+mdp.printparameters()
+
 
 #start Policy Iteration
-perfect_policy = _policyIteration(mdp, zip_policy)
+if (mdp.get_manual() == False):
+    print("Generating Policy...\n")
+perfect_policy, policy_eval = _policyIteration(mdp, zip_policy)
 
-#print out our sexy Policy
-print("Generated Policy:")
-beautyMode(perfect_policy, field)
+
+#Print Final Policy
+if(mdp.get_manual() or mdp.get_autointermediate()):
+    print("\nFinal results:\n ")
+beautyMode(perfect_policy, policy_eval)
 
