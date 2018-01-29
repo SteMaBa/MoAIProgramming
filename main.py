@@ -1,6 +1,9 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
+###
+# Authors: Group 20
+###
 
 import argparse
 import numpy as np
@@ -170,7 +173,6 @@ def old_value(field,new_state,old,state):
         state = state to check
     Return:
         value of new state
-    
     """
     
     i = (int)(new_state[0])
@@ -197,6 +199,8 @@ def v(state, old, mdp, zip_policy):
         old = value function of t-1
         mdp as MDP_PLUS object which holds field, probability, reward, discount_factor
         zip_policy = tuple of 2 2D-arrays = action/ direction to move
+    Return:
+        value of state following policy
     """
     
     x_policy, y_policy = zip_policy
@@ -418,6 +422,7 @@ def _policyIteration(mdp, zip_policy):
                         exit()
                     else:
                         print("Please specify positive integer!")
+                        continue
                 mdp.set_iterations(read_n)
                 print()
                 break
