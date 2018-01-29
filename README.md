@@ -16,7 +16,7 @@ Necessary additional libraries include **numpy**.
 Give examples
 ```
 
-### Parameter Setting
+## Parameter Setting
 
 Use the -h flag to show information about the possible parameters:
 
@@ -31,8 +31,7 @@ Use the -h flag to show information about the possible parameters:
                         Define number of evaluation steps n. Needed for
                         automatic iteration.
   -g GAMMAVALUE, --gammavalue GAMMAVALUE
-                        Define Gamma for weighting of rewards. Default value
-                        1.
+                        Define Gamma for weighting of rewards. Default value 1.
   -r REWARD, --reward REWARD
                         Define expected reward for actions in non-terminal
                         states. Default value -0.04.
@@ -45,15 +44,19 @@ Use the -h flag to show information about the possible parameters:
 
 ## Run the script
 
+Precede the script name with 'python3' and add all parameters in the end. 
+
+Alternatively, if python3 is located at /usr/local/bin/python3, make main.py executable and run without preceding 'python3'.
+
 ### Automatic processing
 
 An example run for automatic iteration looks like this:
 
 ```
-python3 main.py -p *PATH_TO_GRID* -e 100
+python3 main.py -p /Users/moai/5by10.grid -e 100
 ```
 
-Alternatively, if python3 is located at /usr/local/bin/python3, make main.py executable and run directly from shell.
+
 
 Output for above command and grid 5by10.grid yields:
 
@@ -63,7 +66,7 @@ Output for above command and grid 5by10.grid yields:
 | Methods of AI - Markov Decision Process |
 -------------------------------------------
 
-Read grid from /User/moai/5by10.grid.
+Read grid from /Users/moai/5by10.grid.
 
 Raw read-in grid: 
 F F F F F F F F F F 
@@ -101,8 +104,17 @@ Arrow-Representation of generated Policy:
 This is an example command for manual processing: 
 
 ```
-python3 main.py -p *PATH_TO_GRID* -m 
+python3 main.py -p /Users/moai/5by10.grid -m 
 ``` 
+
+### Necessary parameters
+
+The help flag gives this information.
+
+For automatic processing, provide 'path' and 'evalsteps', all other parameters do not have to be specified and will be used with default values (although they may be set to different values).
+
+For manual processing, only the 'manual' flag and the path needs to be specified.
+
 
 ## Authors
 
