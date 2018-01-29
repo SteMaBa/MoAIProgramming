@@ -6,7 +6,7 @@ Task 1 of the Methods of AI Programming Task on Markov Decision Processes.
 ## Getting started
 
 Start the script with a **Python 3 interpreter**.
-Necessary additional libraries include **numpy**.
+Necessary additional libraries include **numpy** only.
 
 
 ### Parameter Setting
