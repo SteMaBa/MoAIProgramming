@@ -1,22 +1,15 @@
 # MoAI Programming Task 1 - Markov Decision Process
 
-One Paragraph of project description goes here
+Task 1 of the Methods of AI Programming Task on Markov Decision Processes.
 
-## Getting Started
 
-These 
-
-### Prerequisites
+## Getting started
 
 Start the script with a **Python 3 interpreter**.
 Necessary additional libraries include **numpy**.
 
 
-```
-Give examples
-```
-
-## Parameter Setting
+### Parameter Setting
 
 Use the -h flag to show information about the possible parameters:
 
@@ -61,7 +54,6 @@ python3 main.py -p /Users/moai/5by10.grid -e 100
 Output for above command and grid 5by10.grid yields:
 
 ```
-
 -------------------------------------------
 | Methods of AI - Markov Decision Process |
 -------------------------------------------
@@ -95,7 +87,6 @@ Arrow-Representation of generated Policy:
 ↑   → ↓     ↑     ← 
 ↓     ↓           ↑ 
 → → → → → → → → → ↑ 
-
 ```
 
 
@@ -109,13 +100,14 @@ python3 main.py -p /Users/moai/5by10.grid -m
 
 ### Necessary parameters
 
-The help flag gives this information.
+Use the 'help' flag to get this information from the script.
 
 For automatic processing, provide 'path' and 'evalsteps', all other parameters do not have to be specified and will be used with default values (although they may be set to different values).
 
-For manual processing, only the 'manual' flag and the path needs to be specified.
+For manual processing, only the 'manual' flag and the 'path' need to be specified.
 
 
 ## Authors
 
-Group 20
+Group 20 - This repository can be found on GitHub: [MoAIProgramming](https://github.com/SteMaBa/MoAIProgramming) 
+
